@@ -3,12 +3,15 @@ package com.coreos.jetcd.resolver;
 import io.grpc.Attributes;
 import io.grpc.ResolvedServerInfo;
 import io.grpc.internal.SharedResourceHolder.Resource;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 /**
  * SimpleEtcdNameResolver returns pre-configured addresses to the caller.
@@ -22,10 +25,14 @@ public class SimpleEtcdNameResolver extends AbstractEtcdNameResolver {
     super(name, executorResource);
 
     this.servers = Collections.unmodifiableList(
-        uris.stream()
-            .map(uri -> new ResolvedServerInfo(new InetSocketAddress(uri.getHost(), uri.getPort()),
-                Attributes.EMPTY))
-            .collect(Collectors.toList())
+            Lists.transform(uris, new Function<URI, ResolvedServerInfo>() {
+
+                @Override
+                public ResolvedServerInfo apply(URI uri) {
+                    return new ResolvedServerInfo(new InetSocketAddress(uri.getHost(), uri.getPort()),
+                            Attributes.EMPTY);
+                }
+            })
     );
   }
 

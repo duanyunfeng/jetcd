@@ -28,7 +28,7 @@ public class EtcdKVTest {
   @BeforeTest
   public void setUp() throws Exception {
     test = new Assertion();
-    EtcdClient client = EtcdClientBuilder.newBuilder().endpoints("http://localhost:2379").build();
+    EtcdClient client = EtcdClientBuilder.newBuilder().endpoints("http://172.27.141.11:2379").build();
     kvClient = client.getKVClient();
   }
 
@@ -70,6 +70,8 @@ public class EtcdKVTest {
       feature.get();
       ListenableFuture<RangeResponse> getFeature = kvClient.get(sampleKey);
       RangeResponse response = getFeature.get();
+      
+      System.out.println(response.getKvs(0).getValue().toStringUtf8());
       test.assertEquals(response.getKvsCount(), 1);
       test.assertEquals(response.getKvs(0).getValue().toStringUtf8(), "sample_value2");
       test.assertTrue(!response.getMore());

@@ -1,25 +1,25 @@
 package com.coreos.jetcd;
 
-import static com.coreos.jetcd.EtcdClientUtil.defaultChannelBuilder;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.NameResolver;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import com.coreos.jetcd.api.AuthGrpc;
 import com.coreos.jetcd.api.AuthenticateRequest;
 import com.coreos.jetcd.api.AuthenticateResponse;
 import com.coreos.jetcd.exception.AuthFailedException;
 import com.coreos.jetcd.exception.ConnectException;
+import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.NameResolver;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Etcd Client.
@@ -36,12 +36,12 @@ public class EtcdClient {
   private final Supplier<EtcdLease> leaseClient;
 
   public EtcdClient(EtcdClientBuilder builder) throws ConnectException, AuthFailedException {
-    this(Optional.empty(), builder);
+      this(Optional.<ManagedChannelBuilder<?>>absent(), builder);
   }
 
   public EtcdClient(ManagedChannelBuilder<?> channelBuilder, EtcdClientBuilder clientBuilder)
       throws ConnectException, AuthFailedException {
-    this(Optional.ofNullable(channelBuilder), clientBuilder);
+      this(Optional.<ManagedChannelBuilder<?>>fromNullable(channelBuilder), clientBuilder);
   }
 
   private EtcdClient(Optional<ManagedChannelBuilder<?>> channelBuilder,
@@ -55,16 +55,51 @@ public class EtcdClient {
       this.nameResolverFactory = EtcdClientUtil.simpleNameResolveFactory(this.endpoints);
     }
 
-    this.channel = channelBuilder.orElseGet(() -> defaultChannelBuilder(nameResolverFactory))
-        .build();
+    this.channel = channelBuilder.or(new Supplier<ManagedChannelBuilder<?>>() {
 
-    Optional<String> token = getToken(channel, clientBuilder);
+        @Override
+        public ManagedChannelBuilder<?> get() {
+            return EtcdClientUtil.defaultChannelBuilder(nameResolverFactory);
+        }
+    }).build();
 
-    this.kvClient = Suppliers.memoize(() -> new EtcdKVImpl(channel, token));
-    this.authClient = Suppliers.memoize(() -> new EtcdAuthImpl(channel, token));
-    this.maintenanceClient = Suppliers.memoize(() -> new EtcdMaintenanceImpl(channel, token));
-    this.clusterClient = Suppliers.memoize(() -> new EtcdClusterImpl(channel, token));
-    this.leaseClient = Suppliers.memoize(() -> new EtcdLeaseImpl(channel, token));
+    final Optional<String> token = getToken(channel, clientBuilder);
+
+    this.kvClient = Suppliers.memoize(new Supplier<EtcdKV>() {
+
+        @Override
+        public EtcdKV get() {
+            return new EtcdKVImpl(channel, token);
+        }
+    });
+    this.authClient = Suppliers.memoize(new Supplier<EtcdAuth>() {
+
+        @Override
+        public EtcdAuth get() {
+            return new EtcdAuthImpl(channel, token);
+        }
+    });
+    this.maintenanceClient = Suppliers.memoize(new Supplier<EtcdMaintenance>() {
+
+        @Override
+        public EtcdMaintenance get() {
+            return new EtcdMaintenanceImpl(channel, token);
+        }
+    });
+    this.clusterClient = Suppliers.memoize(new Supplier<EtcdCluster>() {
+
+        @Override
+        public EtcdCluster get() {
+            return new EtcdClusterImpl(channel, token);
+        }
+    });
+    this.leaseClient = Suppliers.memoize(new Supplier<EtcdLease>() {
+
+        @Override
+        public EtcdLease get() {
+            return new EtcdLeaseImpl(channel, token);
+        }
+    });
   }
 
   // ************************
@@ -143,6 +178,6 @@ public class EtcdClient {
         throw new AuthFailedException("auth failed as wrong username or password", exee);
       }
     }
-    return Optional.empty();
+    return Optional.absent();
   }
 }

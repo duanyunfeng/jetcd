@@ -1,6 +1,8 @@
 package com.coreos.jetcd;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import io.grpc.ManagedChannel;
+import io.grpc.stub.StreamObserver;
 
 import com.coreos.jetcd.api.AlarmMember;
 import com.coreos.jetcd.api.AlarmRequest;
@@ -13,10 +15,8 @@ import com.coreos.jetcd.api.SnapshotRequest;
 import com.coreos.jetcd.api.SnapshotResponse;
 import com.coreos.jetcd.api.StatusRequest;
 import com.coreos.jetcd.api.StatusResponse;
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
-import io.grpc.ManagedChannel;
-import io.grpc.stub.StreamObserver;
-import java.util.Optional;
 
 /**
  * Implementation of maintenance client.
