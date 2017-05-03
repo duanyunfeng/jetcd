@@ -295,4 +295,14 @@
         </profile>
     </profiles>
 
+	<distributionManagement>
+		<snapshotRepository>
+			<id>jrepo2-public</id>
+			<url>http://jrepo2.yypm.com/nexus/content/repositories/snapshots/</url>
+		</snapshotRepository>
+		<repository>
+			<id>jrepo2-public</id>
+			<url>http://jrepo2.yypm.com/nexus/content/repositories/releases/</url>
+		</repository>
+	</distributionManagement>
 </project>
