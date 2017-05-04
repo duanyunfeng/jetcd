@@ -34,6 +34,7 @@ public class EtcdClient {
   private final Supplier<EtcdMaintenance> maintenanceClient;
   private final Supplier<EtcdCluster> clusterClient;
   private final Supplier<EtcdLease> leaseClient;
+  private final Supplier<EtcdWatch> watchClient;
 
   public EtcdClient(EtcdClientBuilder builder) throws ConnectException, AuthFailedException {
       this(Optional.<ManagedChannelBuilder<?>>absent(), builder);
@@ -100,6 +101,13 @@ public class EtcdClient {
             return new EtcdLeaseImpl(channel, token);
         }
     });
+    this.watchClient = Suppliers.memoize(new Supplier<EtcdWatch>() {
+
+        @Override
+        public EtcdWatch get() {
+            return new EtcdWatchImpl(channel, token);
+        }
+    });
   }
 
   // ************************
@@ -124,6 +132,10 @@ public class EtcdClient {
 
   public EtcdLease getLeaseClient() {
     return this.leaseClient.get();
+  }
+
+  public EtcdWatch getWatchClient() {
+    return this.watchClient.get();
   }
 
   public void close() {
