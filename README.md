@@ -1,90 +1,132 @@
-# jetcd
+# jetcd - A Java Client for etcd
+[![Build Status](https://img.shields.io/travis/com/etcd-io/jetcd.svg?style=flat-square)](https://travis-ci.com/etcd-io/jetcd)
+[![License](https://img.shields.io/badge/Licence-Apache%202.0-blue.svg?style=flat-square)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![Maven Central](https://img.shields.io/maven-central/v/io.etcd/jetcd-core.svg?style=flat-square)](https://search.maven.org/#search%7Cga%7C1%7Cio.etcd)
+[![GitHub release](https://img.shields.io/github/release/etcd-io/jetcd.svg?style=flat-square)](https://github.com/etcd-io/jetcd/releases)
+[![Javadocs](http://www.javadoc.io/badge/io/etcd/jetcd-core.svg)](http://www.javadoc.io/doc/io/etcd/jetcd-core)
 
-[![Build Status](https://travis-ci.org/coreos/jetcd.svg?branch=master)](https://travis-ci.org/coreos/jetcd)
+jetcd is the official java client for [etcd](https://github.com/etcd-io/etcd) v3.
 
-Java client for etcd v3.
+> Note: jetcd is work-in-progress and may break backward compatibility.
 
-## Getting started
+## Java Versions
+
+Java 8 or above is required.
+
+## Download
+
+### Maven
+```xml
+<dependency>
+  <groupId>io.etcd</groupId>
+  <artifactId>jetcd-core</artifactId>
+  <version>${jetcd-version}</version>
+</dependency>
+```
+
+Development snapshots are available in [Sonatypes's snapshot repository](https://oss.sonatype.org/content/repositories/snapshots/io/etcd).
+
+### Gradle
+
+```
+dependencies {
+    compile "io.etcd:jetcd-core:$jetcd-version"
+}
+```
 
 ### Usage
 
-```
-EtcdClient client = EtcdClientBuilder.newBuilder().endpoints("http://localhost:2379").build();
-EtcdKV kvClient = client.getKVClient();
+```java
+// create client
+Client client = Client.builder().endpoints("http://localhost:2379").build();
+KV kvClient = client.getKVClient();
 
-ByteString key = ByteString.copyFrom("test_key", "UTF-8");
-ByteString value = ByteString.copyFrom("test_value", "UTF-8");
+ByteSequence key = ByteSequence.from("test_key".getBytes());
+ByteSequence value = ByteSequence.from("test_value".getBytes());
 
 // put the key-value
 kvClient.put(key, value).get();
-// get the value
-ListenableFuture<RangeResponse> getFeature = kvClient.get(key);
-RangeResponse response = getFeature.get();
-assertEquals(response.getKvsCount(), 1);
-assertEquals(response.getKvs(0).getValue().toStringUtf8(), "test_value");
+
+// get the CompletableFuture
+CompletableFuture<GetResponse> getFuture = kvClient.get(key);
+
+// get the value from CompletableFuture
+GetResponse response = getFuture.get();
+
 // delete the key
-kvClient.delete(key).get()
+kvClient.delete(key).get();
 ```
 
-For full etcd v3 API, plesase refer to [API_Reference](https://github.com/coreos/etcd/blob/master/Documentation/dev-guide/api_reference_v3.md).
+For full etcd v3 API, plesase refer to [API_Reference](https://github.com/etcd-io/etcd/blob/master/Documentation/dev-guide/api_reference_v3.md).
+
+### Examples
+
+The [examples](https://github.com/etcd-io/jetcd/tree/master/jetcd-examples) are standalone projects that show usage of jetcd.
+
+## Launcher
+
+The `io.etcd:jetcd-launcher` offers a convenient utility to programmatically start & stop an isolated `etcd` server.  This can be very useful e.g. for integration testing, like so:
+
+```java
+@Rule public final EtcdClusterResource etcd = new EtcdClusterResource("test-etcd", 1);
+Client client = Client.builder().endpoints(etcd.cluster().getClientEndpoints()).build();
+```
+
+This launcher uses the Testcontainers framework.
+For more info and prerequisites visit [testcontainers.org](https://www.testcontainers.org).
+
+## Versioning
+
+The project follows [Semantic Versioning](http://semver.org/).
+
+The current major version is zero (0.y.z). Anything may change at any time. The public API should not be considered stable.
 
 ## Running tests
 
-The project is to be tested against a three node `etcd` setup, launched by the [scripts/run_etcd.sh](scripts/run_etcd.sh) shell script:
+The project is tested against a three node `etcd` setup started with the Launcher (above) :
 
-```
-./scripts/run_etcd.sh
-```
-
-It should work on either macOS or Linux.
-
-Note: Make sure you don't have a default `etcd` running on your system! The script uses the default port `2379` for the first node, which fails to launch if that port is already taken.
-
-```
-mvn test
+```sh
+$ mvn test
 ...
 
--------------------------------------------------------
- T E S T S
--------------------------------------------------------
-Running TestSuite
-Feb 23, 2017 6:40:18 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@48a242ce] Created with target etcd
-Feb 23, 2017 6:40:18 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@20d3d15a] Created with target etcd
-Feb 23, 2017 6:40:18 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@548a102f] Created with target etcd
-Feb 23, 2017 6:40:18 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@17c386de] Created with target etcd
-Feb 23, 2017 6:40:19 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@25d250c6] Created with target etcd
-Feb 23, 2017 6:40:27 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@3eb7fc54] Created with target etcd
-Feb 23, 2017 6:40:27 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@6ef888f6] Created with target etcd
-Feb 23, 2017 6:40:33 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@49b0b76] Created with target etcd
-Feb 23, 2017 6:40:33 PM io.grpc.internal.ManagedChannelImpl <init>
-INFO: [ManagedChannelImpl@6f96c77] Created with target etcd
-Tests run: 37, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 16.797 sec - in TestSuite
-
-Results :
-
-Tests run: 37, Failures: 0, Errors: 0, Skipped: 0
-
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running TestSuite
+[WARNING] Tests run: 104, Failures: 0, Errors: 0, Skipped: 3, Time elapsed: 31.308 s - in TestSuite
+[INFO]
+[INFO] Results:
+[INFO]
+[WARNING] Tests run: 104, Failures: 0, Errors: 0, Skipped: 3
+...
+[INFO] Reactor Summary:
+[INFO]
+[INFO] jetcd .............................................. SUCCESS [  0.010 s]
+[INFO] jetcd-core ......................................... SUCCESS [ 55.480 s]
+[INFO] jetcd-discovery-dns-srv ............................ SUCCESS [  3.225 s]
+[INFO] jetcd-watch-example ................................ SUCCESS [  0.291 s]
+[INFO] jetcd-simple-ctl ................................... SUCCESS [  0.028 s]
+[INFO] jetcd-examples ..................................... SUCCESS [  0.000 s]
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time: 39.229 s
-[INFO] Finished at: 2017-02-23T18:40:34+02:00
-[INFO] Final Memory: 37M/587M
-[INFO] ------------------------------------------------------------------------
-```
+[INFO] Total time: 59.929 s
+[INFO] Finished at: 2018-02-13T12:51:13-08:00
+[INFO] Final Memory: 84M/443M
+````
 
 ## Contact
 
 * Mailing list: [etcd-dev](https://groups.google.com/forum/?hl=en#!forum/etcd-dev)
+* IRC: #[etcd](irc://irc.freenode.org:6667/#etcd) on freenode.org
+
+## Contributing
+
+See [CONTRIBUTING](https://github.com/etcd-io/jetcd/blob/master/CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
+
+## Reporting bugs
+
+See [reporting bugs](https://github.com/etcd-io/etcd/blob/master/Documentation/reporting_bugs.md) for details about reporting any issues.
 
 ## License
 
-jetcd is under the Apache 2.0 license. See the [LICENSE](https://github.com/coreos/jetcd/blob/master/LICENSE) file for details.
+jetcd is under the Apache 2.0 license. See the [LICENSE](https://github.com/etcd-io/jetcd/blob/master/LICENSE) file for details.

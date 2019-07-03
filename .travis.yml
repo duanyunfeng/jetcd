@@ -1,7 +1,30 @@
+sudo: required
+install: true
 language: java
-sudo: false
+dist: xenial
+
+services:
+  - docker
+
+before_install:
+  - curl -s "https://get.sdkman.io" | bash
+  - source "$HOME/.sdkman/bin/sdkman-init.sh"
+  - sdk version
+  - mkdir -p "$HOME/.sdkman/etc"
+  - echo "sdkman_auto_answer=true" > "$HOME/.sdkman/etc/config"
+  - echo "sdkman_auto_selfupdate=true" >> "$HOME/.sdkman/etc/config"
+  - sdk install java 8.0.212.hs-adpt
+
 script:
-  - scripts/run_etcd.sh 
-  - mvn clean verify
-jdk:
-  - oraclejdk8
+  - sdk use java 8.0.212.hs-adpt
+  - java -version
+  - ./mvnw clean install
+
+deploy:
+  provider: script
+  script: ./mvnw deploy -DskipTests --settings etc/mvn-deploy-settings.xml
+  skip_cleanup: true 
+  on:
+    branch: master
+    condition: $TRAVIS_PULL_REQUEST = "false"
+    

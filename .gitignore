@@ -1,12 +1,16 @@
 .*
 !.gitignore
+!.travis.yml
 target/
+target-ide/
 *.iml
 logs/
 *.releaseBackup
 *.versionsBackup
+.vscode/
+.settings/
+.project
 
 # Created by './scripts/run_etcd.sh'
 /external/
-/target
-/test-output
+bin/
